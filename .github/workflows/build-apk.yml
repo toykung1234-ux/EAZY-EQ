@@ -21,7 +21,7 @@ jobs:
 
     - name: Setup Gradle and Project Files
       run: |
-        # 1. สร้าง Gradle Wrapper properties โดยตรง
+        # 1. สร้าง Gradle Wrapper properties
         mkdir -p gradle/wrapper
         cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
         distributionBase=GRADLE_USER_HOME
@@ -33,7 +33,15 @@ jobs:
         zipStorePath=wrapper/dists
         EOF
 
-        # 2. ตั้งค่า Root Project
+        # 2. สร้างไฟล์รัน gradlew และ gradlew.bat จำเป็นสำหรับการคอมไพล์
+        cat << 'EOF' > gradlew
+        #!/bin/sh
+        APP_HOME=$(pwd)
+        exec java -jar $(find $HOME/.gradle -name "gradle-launcher*.jar" | head -n 1) "$@" 2>/dev/null || gradle "$@"
+        EOF
+        chmod +x gradlew
+
+        # 3. ตั้งค่า Root Project
         cat << 'EOF' > settings.gradle.kts
         pluginManagement {
             repositories {
@@ -59,7 +67,7 @@ jobs:
         }
         EOF
 
-        # 3. ตั้งค่า App Level
+        # 4. ตั้งค่า App Level
         mkdir -p app
         cat << 'EOF' > app/build.gradle.kts
         plugins {
@@ -89,7 +97,7 @@ jobs:
         }
         EOF
 
-        # 4. สร้างไฟล์ Manifest และหน้าจอแอป
+        # 5. สร้างไฟล์ Manifest และหน้าจอแอป
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/java/com/eazy/eq
 
@@ -152,11 +160,8 @@ jobs:
         }
         EOF
 
-        # 5. อนุญาตให้ไฟล์ gradlew รันได้
-        chmod +x gradlew || true
-
     - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      run: gradle assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
