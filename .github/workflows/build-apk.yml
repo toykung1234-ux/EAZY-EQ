@@ -19,27 +19,14 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle and Build Files
+    - name: Setup Basic Android Project
       run: |
-        # 1. Setup Gradle Wrapper
-        mkdir -p gradle/wrapper
-        cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
-        distributionBase=GRADLE_USER_HOME
-        distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
-        networkTimeout=10000
-        validateDistributionUrl=true
-        zipStoreBase=GRADLE_USER_HOME
-        zipStorePath=wrapper/dists
-        EOF
-
-        # 2. Create Root Gradle Files
+        # 1. Root settings & build file
         cat << 'EOF' > settings.gradle.kts
         pluginManagement {
             repositories {
                 google()
                 mavenCentral()
-                gradlePluginPortal()
             }
         }
         dependencyResolutionManagement {
@@ -55,12 +42,12 @@ jobs:
 
         cat << 'EOF' > build.gradle.kts
         plugins {
-            id("com.android.application") version "8.2.2" apply false
-            id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+            id("com.android.application") version "8.1.1" apply false
+            id("org.jetbrains.kotlin.android") version "1.8.10" apply false
         }
         EOF
 
-        # 3. Create App Level Build File
+        # 2. App level build file
         mkdir -p app
         cat << 'EOF' > app/build.gradle.kts
         plugins {
@@ -69,11 +56,11 @@ jobs:
         }
         android {
             namespace = "com.eazy.eq"
-            compileSdk = 34
+            compileSdk = 33
             defaultConfig {
                 applicationId = "com.eazy.eq"
-                minSdk = 24
-                targetSdk = 34
+                minSdk = 21
+                targetSdk = 33
                 versionCode = 1
                 versionName = "1.0"
             }
@@ -82,21 +69,18 @@ jobs:
                 targetCompatibility = JavaVersion.VERSION_17
             }
             kotlinOptions { jvmTarget = "17" }
-            buildFeatures { compose = true }
-            composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
         }
         dependencies {
-            implementation("androidx.core:core-ktx:1.12.0")
-            implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-            implementation("androidx.activity:activity-compose:1.8.2")
-            implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-            implementation("androidx.compose.ui:ui")
-            implementation("androidx.compose.material3:material3")
+            implementation("androidx.core:core-ktx:1.10.1")
+            implementation("androidx.appcompat:appcompat:1.6.1")
+            implementation("com.google.android.material:material:1.9.0")
         }
         EOF
 
-        # 4. Create Android Manifest & Source Code
+        # 3. Android Manifest & Layout & Kotlin Source
+        mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/java/com/eazy/eq
+
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -104,7 +88,7 @@ jobs:
                 android:allowBackup="true"
                 android:label="EAZY EQ"
                 android:supportsRtl="true"
-                android:theme="@android:style/Theme.Material.NoActionBar">
+                android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
                 <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
@@ -115,54 +99,49 @@ jobs:
         </manifest>
         EOF
 
+        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#0F111A"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="EAZY EQ"
+                android:textColor="#00F2FE"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Equalizer Application Ready!"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp" />
+        </LinearLayout>
+        EOF
+
         cat << 'EOF' > app/src/main/java/com/eazy/eq/MainActivity.kt
         package com.eazy.eq
 
         import android.os.Bundle
-        import androidx.activity.ComponentActivity
-        import androidx.activity.compose.setContent
-        import androidx.compose.foundation.background
-        import androidx.compose.foundation.layout.*
-        import androidx.compose.material3.Text
-        import androidx.compose.ui.Alignment
-        import androidx.compose.ui.Modifier
-        import androidx.compose.ui.graphics.Color
-        import androidx.compose.ui.text.font.FontWeight
-        import androidx.compose.ui.unit.dp
-        import androidx.compose.ui.unit.sp
+        import androidx.appcompat.app.AppCompatActivity
 
-        class MainActivity : ComponentActivity() {
+        class MainActivity : AppCompatActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                setContent {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFF0F111A)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "EAZY EQ",
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF00F2FE)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "Equalizer Application Ready!",
-                                fontSize = 18.sp,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
+                setContentView(R.layout.activity_main)
             }
         }
         EOF
 
-    - name: Setup Gradle Wrapper Executable
-      run: gradle wrapper
+    - name: Generate Gradle Wrapper
+      run: gradle wrapper --gradle-version 8.0
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
