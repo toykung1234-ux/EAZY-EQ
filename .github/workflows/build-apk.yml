@@ -19,9 +19,21 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Basic Android Project
+    - name: Setup Gradle and Project Files
       run: |
-        # 1. Root settings & build file
+        # 1. สร้าง Gradle Wrapper properties โดยตรง
+        mkdir -p gradle/wrapper
+        cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
+        distributionBase=GRADLE_USER_HOME
+        distributionPath=wrapper/dists
+        distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip
+        networkTimeout=10000
+        validateDistributionUrl=true
+        zipStoreBase=GRADLE_USER_HOME
+        zipStorePath=wrapper/dists
+        EOF
+
+        # 2. ตั้งค่า Root Project
         cat << 'EOF' > settings.gradle.kts
         pluginManagement {
             repositories {
@@ -47,7 +59,7 @@ jobs:
         }
         EOF
 
-        # 2. App level build file
+        # 3. ตั้งค่า App Level
         mkdir -p app
         cat << 'EOF' > app/build.gradle.kts
         plugins {
@@ -77,7 +89,7 @@ jobs:
         }
         EOF
 
-        # 3. Android Manifest & Layout & Kotlin Source
+        # 4. สร้างไฟล์ Manifest และหน้าจอแอป
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/java/com/eazy/eq
 
@@ -140,8 +152,8 @@ jobs:
         }
         EOF
 
-    - name: Generate Gradle Wrapper
-      run: gradle wrapper --gradle-version 8.0
+        # 5. อนุญาตให้ไฟล์ gradlew รันได้
+        chmod +x gradlew || true
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
